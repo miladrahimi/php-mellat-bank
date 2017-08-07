@@ -1,0 +1,35 @@
+{
+    "name": "miladrahimi/phpmellatbank",
+    "description": "Iranian Mellat Bank Gateway for PHP Projects",
+    "keywords": [
+        "Mellat",
+        "Bank",
+        "Gateway",
+        "Online Payment",
+        "Iran"
+    ],
+    "homepage": "http://miladrahimi.github.io",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Milad Rahimi",
+            "email": "info@miladrahimi.com",
+            "homepage": "http://miladrahimi.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "info@miladrahimi.com",
+        "source": "https://github.com/miladrahimi/phpmellatbank/issues"
+    },
+    "require": {
+        "php": ">=5.4.0",
+        "ext-soap": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "MiladRahimi\\": "src/MiladRahimi/"
+        }
+    }
+}
