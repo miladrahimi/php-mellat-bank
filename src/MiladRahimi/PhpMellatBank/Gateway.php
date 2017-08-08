@@ -13,6 +13,10 @@ use nusoap_client;
 
 class Gateway
 {
+    const WSDL = 'https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl';
+
+    const SOAP_NAMESPACE = 'http://interfaces.core.sw.bps.com/';
+
     /**
      * Payment options
      *
@@ -41,14 +45,13 @@ class Gateway
      *
      * @param int $amount
      * @param string $additionalData
-     * @return string Bank Response
+     * @return string ReferenceId
      * @throws GatewayException
      */
     public function requestPayment($amount, $additionalData = null)
     {
         /** @var object $client */
-        $client = new nusoap_client('https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl');
-        $namespace = 'http://interfaces.core.sw.bps.com/';
+        $client = new nusoap_client(self::WSDL);
 
         if (empty($client)) {
             throw new GatewayException('Gateway is not available.');
@@ -64,7 +67,7 @@ class Gateway
         $this->options['localTime'] = date('His');
         $this->options['additionalData'] = $additionalData;
 
-        $result = $client->call('bpPayRequest', $this->options, $namespace);
+        $result = $client->call('bpPayRequest', $this->options, self::SOAP_NAMESPACE);
 
         $resultArray = explode(',', $result);
         $response = $resultArray[0];
@@ -81,6 +84,6 @@ class Gateway
             throw new GatewayException('Response: ' . $response);
         }
 
-        return $result;
+        return $resultArray[1];
     }
 }
