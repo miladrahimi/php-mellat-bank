@@ -9,7 +9,7 @@
 namespace MiladRahimi\PhpMellatBank;
 
 use MiladRahimi\PhpMellatBank\Exceptions\GatewayException;
-use SoapClient;
+use nusoap_client;
 
 class Gateway
 {
@@ -47,11 +47,15 @@ class Gateway
     public function requestPayment($amount, $additionalData = null)
     {
         /** @var object $client */
-        $client = new SoapClient('https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl');
+        $client = new nusoap_client('https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl');
         $namespace = 'http://interfaces.core.sw.bps.com/';
 
-        if (empty($client) || $client->getError()) {
+        if (empty($client)) {
             throw new GatewayException('Gateway is not available.');
+        }
+
+        if ($e = $client->getError()) {
+            throw new GatewayException('Error: ' . $e);
         }
 
         $this->options['orderId'] = time() . mt_rand(100000, 999999);
@@ -67,6 +71,10 @@ class Gateway
 
         if ($client->fault) {
             throw new GatewayException('Fault: ' . $client->fault);
+        }
+
+        if ($e = $client->getError()) {
+            throw new GatewayException('Error: ' . $e);
         }
 
         if ($response != 0) {
