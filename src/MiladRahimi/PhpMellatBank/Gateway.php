@@ -17,6 +17,8 @@ class Gateway
 
     const SOAP_NAMESPACE = 'http://interfaces.core.sw.bps.com/';
 
+    const GATEWAY_URL = 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat';
+
     /**
      * Payment options
      *
