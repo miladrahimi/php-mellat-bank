@@ -9,6 +9,7 @@
 namespace MiladRahimi\PhpMellatBank;
 
 use MiladRahimi\PhpMellatBank\Exceptions\GatewayException;
+use MiladRahimi\PhpMellatBank\Exceptions\UnsuccessfulPaymentException;
 use nusoap_client;
 
 class Gateway
@@ -52,30 +53,23 @@ class Gateway
      */
     public function requestPayment($amount, $additionalData = null)
     {
-        /** @var object $client */
-        $client = new nusoap_client(self::WSDL);
+        $client = $this->createSoapClient();
 
-        if (empty($client)) {
-            throw new GatewayException('Gateway is not available.');
-        }
+        $options = $this->options;
 
-        if ($e = $client->getError()) {
-            throw new GatewayException('Error: ' . $e);
-        }
+        $options['orderId'] = time() . mt_rand(100000, 999999);
+        $options['amount'] = $amount;
+        $options['localDate'] = date('Ymd');
+        $options['localTime'] = date('His');
+        $options['additionalData'] = $additionalData;
 
-        $this->options['orderId'] = time() . mt_rand(100000, 999999);
-        $this->options['amount'] = $amount;
-        $this->options['localDate'] = date('Ymd');
-        $this->options['localTime'] = date('His');
-        $this->options['additionalData'] = $additionalData;
-
-        $result = $client->call('bpPayRequest', $this->options, self::SOAP_NAMESPACE);
+        $result = $client->call('bpPayRequest', $options, self::SOAP_NAMESPACE);
 
         $resultArray = explode(',', $result);
         $response = $resultArray[0];
 
         if ($client->fault) {
-            throw new GatewayException('Fault: ' . $client->fault);
+            throw new GatewayException('Fault');
         }
 
         if ($e = $client->getError()) {
@@ -87,5 +81,89 @@ class Gateway
         }
 
         return $resultArray[1];
+    }
+
+    /**
+     * Get action url for payment html form
+     *
+     * @return string url
+     */
+    public function formActionUrl()
+    {
+        return self::GATEWAY_URL;
+    }
+
+    /**
+     * Get reference id if the payment is successful
+     *
+     * @return bool
+     */
+    public function checkPayment()
+    {
+        if (isset($_POST['ResCode']) && $_POST['ResCode'] == 0) {
+            return $_POST['RefId'];
+        }
+
+        return false;
+    }
+
+    /**
+     * Verify the payment and get bank response
+     *
+     * @return array
+     * @throws UnsuccessfulPaymentException
+     */
+    public function verifyPayment()
+    {
+        if ($this->checkPayment() == false) {
+            throw new UnsuccessfulPaymentException();
+        }
+
+        $client = $this->createSoapClient();
+
+        $parameters = array(
+            'terminalId' => $this->options['terminalId'],
+            'userName' => $this->options['userName'],
+            'userPassword' => $this->options['userPassword'],
+            'orderId' => $_POST['saleOrderId'],
+            'saleOrderId' => $_POST['SaleOrderId'],
+            'saleReferenceId' => $_POST['SaleReferenceId']
+        );
+
+        $client->call('bpVerifyRequest', $parameters, self::SOAP_NAMESPACE);
+
+        $inquiryResult = $client->call('bpInquiryRequest', $parameters, self::SOAP_NAMESPACE);
+        if ($inquiryResult != 0) {
+            throw new UnsuccessfulPaymentException();
+        }
+
+        $client->call('bpSettleRequest', $parameters, self::SOAP_NAMESPACE);
+
+        return [
+            'RefId' => $_POST['RefId'],
+            'ResCode' => $_POST['ResCode'],
+            'saleOrderId' => $_POST['saleOrderId'],
+            'SaleReferenceId' => $_POST['SaleReferenceId'],
+        ];
+    }
+
+    /**
+     * @return nusoap_client
+     * @throws GatewayException
+     */
+    private function createSoapClient()
+    {
+        /** @var object $client */
+        $client = new nusoap_client(self::WSDL);
+
+        if (empty($client)) {
+            throw new GatewayException('Gateway is not available.');
+        }
+
+        if ($e = $client->getError()) {
+            throw new GatewayException('Error: ' . $e);
+        }
+
+        return $client;
     }
 }
