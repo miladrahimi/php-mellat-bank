@@ -131,12 +131,12 @@ class Gateway
             'saleReferenceId' => $_POST['SaleReferenceId']
         );
 
+        $client->call('bpVerifyRequest', $parameters, self::SOAP_NAMESPACE);
+
         $inquiryResult = $client->call('bpInquiryRequest', $parameters, self::SOAP_NAMESPACE);
         if ($inquiryResult != 0) {
-            throw new UnsuccessfulPaymentException();
+            throw new UnsuccessfulPaymentException($inquiryResult);
         }
-
-        $client->call('bpVerifyRequest', $parameters, self::SOAP_NAMESPACE);
 
         $client->call('bpSettleRequest', $parameters, self::SOAP_NAMESPACE);
 
