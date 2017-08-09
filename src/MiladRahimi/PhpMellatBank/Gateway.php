@@ -126,7 +126,7 @@ class Gateway
             'terminalId' => $this->options['terminalId'],
             'userName' => $this->options['userName'],
             'userPassword' => $this->options['userPassword'],
-            'orderId' => $_POST['saleOrderId'],
+            'orderId' => $_POST['SaleOrderId'],
             'saleOrderId' => $_POST['SaleOrderId'],
             'saleReferenceId' => $_POST['SaleReferenceId']
         );
