@@ -70,7 +70,7 @@ class Gateway
         $response = $resultArray[0];
 
         if ($client->fault) {
-            throw new GatewayException('Fault');
+            throw new GatewayException('Fault: ' . json_encode($client->fault));
         }
 
         if ($e = $client->getError()) {
@@ -116,8 +116,12 @@ class Gateway
      */
     public function verifyPayment()
     {
-        if ($this->checkPayment() == false) {
+        if (isset($_POST['ResCode']) == false) {
             throw new UnsuccessfulPaymentException();
+        }
+
+        if ($_POST['ResCode'] != 0) {
+            throw new UnsuccessfulPaymentException('ResCode: ' . $_POST['ResCode']);
         }
 
         $client = $this->createSoapClient();
@@ -135,7 +139,7 @@ class Gateway
 
         $inquiryResult = $client->call('bpInquiryRequest', $parameters, self::SOAP_NAMESPACE);
         if ($inquiryResult != 0) {
-            throw new UnsuccessfulPaymentException($inquiryResult);
+            throw new UnsuccessfulPaymentException('Inquiry Result: ' . $inquiryResult);
         }
 
         $client->call('bpSettleRequest', $parameters, self::SOAP_NAMESPACE);
