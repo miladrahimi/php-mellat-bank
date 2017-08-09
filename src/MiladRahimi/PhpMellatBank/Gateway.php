@@ -143,7 +143,7 @@ class Gateway
         $bankResult = new BankResult();
         $bankResult->refId = $_POST['RefId'];
         $bankResult->resCode = $_POST['ResCode'];
-        $bankResult->saleOrderId = $_POST['saleOrderId'];
+        $bankResult->saleOrderId = $_POST['SaleOrderId'];
         $bankResult->saleReferenceId = $_POST['SaleReferenceId'];
 
         return $bankResult;
