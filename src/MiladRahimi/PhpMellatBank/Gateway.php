@@ -10,6 +10,7 @@ namespace MiladRahimi\PhpMellatBank;
 
 use MiladRahimi\PhpMellatBank\Exceptions\GatewayException;
 use MiladRahimi\PhpMellatBank\Exceptions\UnsuccessfulPaymentException;
+use MiladRahimi\PhpMellatBank\Values\BankResult;
 use nusoap_client;
 
 class Gateway
@@ -51,19 +52,19 @@ class Gateway
      * @return string ReferenceId
      * @throws GatewayException
      */
-    public function requestPayment($amount, $additionalData = null)
+    public function requestPayment($amount, $additionalData = '')
     {
         $client = $this->createSoapClient();
 
-        $options = $this->options;
+        $parameters = $this->options;
 
-        $options['orderId'] = time() . mt_rand(100000, 999999);
-        $options['amount'] = $amount;
-        $options['localDate'] = date('Ymd');
-        $options['localTime'] = date('His');
-        $options['additionalData'] = $additionalData;
+        $parameters['orderId'] = time() . mt_rand(100000, 999999);
+        $parameters['amount'] = $amount;
+        $parameters['localDate'] = date('Ymd');
+        $parameters['localTime'] = date('His');
+        $parameters['additionalData'] = $additionalData;
 
-        $result = $client->call('bpPayRequest', $options, self::SOAP_NAMESPACE);
+        $result = $client->call('bpPayRequest', $parameters, self::SOAP_NAMESPACE);
 
         $resultArray = explode(',', $result);
         $response = $resultArray[0];
@@ -94,9 +95,9 @@ class Gateway
     }
 
     /**
-     * Get reference id if the payment is successful
+     * Get reference id if the payment is successful or false if not
      *
-     * @return bool
+     * @return string|false
      */
     public function checkPayment()
     {
@@ -110,7 +111,7 @@ class Gateway
     /**
      * Verify the payment and get bank response
      *
-     * @return array
+     * @return BankResult
      * @throws UnsuccessfulPaymentException
      */
     public function verifyPayment()
@@ -130,21 +131,22 @@ class Gateway
             'saleReferenceId' => $_POST['SaleReferenceId']
         );
 
-        $client->call('bpVerifyRequest', $parameters, self::SOAP_NAMESPACE);
-
         $inquiryResult = $client->call('bpInquiryRequest', $parameters, self::SOAP_NAMESPACE);
         if ($inquiryResult != 0) {
             throw new UnsuccessfulPaymentException();
         }
 
+        $client->call('bpVerifyRequest', $parameters, self::SOAP_NAMESPACE);
+
         $client->call('bpSettleRequest', $parameters, self::SOAP_NAMESPACE);
 
-        return [
-            'RefId' => $_POST['RefId'],
-            'ResCode' => $_POST['ResCode'],
-            'saleOrderId' => $_POST['saleOrderId'],
-            'SaleReferenceId' => $_POST['SaleReferenceId'],
-        ];
+        $bankResult = new BankResult();
+        $bankResult->refId = $_POST['RefId'];
+        $bankResult->resCode = $_POST['ResCode'];
+        $bankResult->saleOrderId = $_POST['saleOrderId'];
+        $bankResult->saleReferenceId = $_POST['SaleReferenceId'];
+
+        return $bankResult;
     }
 
     /**
