@@ -17,4 +17,8 @@ class BankResult
     public $saleOrderId;
 
     public $saleReferenceId;
+
+    public $cardHolderInfo;
+
+    public $cardHolderPan;
 }

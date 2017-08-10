@@ -11,7 +11,6 @@ namespace MiladRahimi\PhpMellatBank;
 use MiladRahimi\PhpMellatBank\Exceptions\GatewayException;
 use MiladRahimi\PhpMellatBank\Exceptions\InvalidResponseException;
 use MiladRahimi\PhpMellatBank\Exceptions\MellatException;
-use MiladRahimi\PhpMellatBank\Exceptions\UnsuccessfulPaymentException;
 use MiladRahimi\PhpMellatBank\Values\BankResult;
 use SoapClient;
 use SoapFault;
@@ -29,20 +28,20 @@ class Gateway
      *
      * @var array
      */
-    private $options = [];
+    private $config = [];
 
     /**
      * Gateway constructor.
      *
-     * @param array $options
+     * @param array $parameters
      */
-    public function __construct(array $options = [])
+    public function __construct(array $parameters = [])
     {
-        $this->options = [
-            'terminalId' => $options['terminalId'],
-            'userName' => $options['userName'],
-            'userPassword' => $options['userPassword'],
-            'callBackUrl' => $options['callBackUrl'],
+        $this->config = [
+            'terminalId' => $parameters['terminalId'],
+            'userName' => $parameters['userName'],
+            'userPassword' => $parameters['userPassword'],
+            'callBackUrl' => $parameters['callBackUrl'],
             'payerId' => 0,
         ];
     }
@@ -60,7 +59,7 @@ class Gateway
     {
         $client = $this->createSoapClient();
 
-        $parameters = $this->options;
+        $parameters = $this->config;
 
         $parameters['orderId'] = time() . mt_rand(100000, 999999);
         $parameters['amount'] = $amount;
@@ -89,7 +88,7 @@ class Gateway
      *
      * @return string url
      */
-    public function formActionUrl()
+    public function url()
     {
         return self::GATEWAY_URL;
     }
@@ -128,9 +127,9 @@ class Gateway
         $client = $this->createSoapClient();
 
         $parameters = array(
-            'terminalId' => $this->options['terminalId'],
-            'userName' => $this->options['userName'],
-            'userPassword' => $this->options['userPassword'],
+            'terminalId' => $this->config['terminalId'],
+            'userName' => $this->config['userName'],
+            'userPassword' => $this->config['userPassword'],
             'orderId' => $_POST['SaleOrderId'],
             'saleOrderId' => $_POST['SaleOrderId'],
             'saleReferenceId' => $_POST['SaleReferenceId']
@@ -149,7 +148,8 @@ class Gateway
         $bankResult->refId = isset($_POST['RefId']) ?: null;
         $bankResult->resCode = $_POST['ResCode'];
         $bankResult->saleOrderId = isset($_POST['SaleOrderId']) ?: null;
-        $bankResult->saleReferenceId = isset($_POST['SaleReferenceId'])?: null;
+        $bankResult->saleReferenceId = isset($_POST['CardHolderInfo'])?: null;
+        $bankResult->cardHolderInfo = isset($_POST['CardHolderPan'])?: null;
 
         return $bankResult;
     }
