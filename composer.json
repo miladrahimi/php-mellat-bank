@@ -30,9 +30,6 @@
   "autoload": {
     "psr-4": {
       "MiladRahimi\\": "src/MiladRahimi/"
-    },
-    "classmap": [
-      "nusoap/"
-    ]
+    }
   }
 }

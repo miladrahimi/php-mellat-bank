@@ -9,9 +9,12 @@
 namespace MiladRahimi\PhpMellatBank;
 
 use MiladRahimi\PhpMellatBank\Exceptions\GatewayException;
+use MiladRahimi\PhpMellatBank\Exceptions\InvalidResponseException;
+use MiladRahimi\PhpMellatBank\Exceptions\MellatException;
 use MiladRahimi\PhpMellatBank\Exceptions\UnsuccessfulPaymentException;
 use MiladRahimi\PhpMellatBank\Values\BankResult;
-use nusoap_client;
+use SoapClient;
+use SoapFault;
 
 class Gateway
 {
@@ -49,8 +52,9 @@ class Gateway
      *
      * @param int $amount
      * @param string $additionalData
-     * @return string ReferenceId
+     * @return string RefId
      * @throws GatewayException
+     * @throws MellatException
      */
     public function requestPayment($amount, $additionalData = '')
     {
@@ -64,21 +68,17 @@ class Gateway
         $parameters['localTime'] = date('His');
         $parameters['additionalData'] = $additionalData;
 
-        $result = $client->call('bpPayRequest', $parameters, self::SOAP_NAMESPACE);
+        try {
+            $result = $client->bpPayRequest($parameters);
+        } catch (SoapFault $e) {
+            throw new GatewayException('Gateway does not respond', 0, $e);
+        }
 
         $resultArray = explode(',', $result);
         $response = $resultArray[0];
 
-        if ($client->fault) {
-            throw new GatewayException('Fault: ' . json_encode($client->fault));
-        }
-
-        if ($e = $client->getError()) {
-            throw new GatewayException('Error: ' . $e);
-        }
-
         if ($response != 0) {
-            throw new GatewayException('Response: ' . $response);
+            throw new MellatException($response);
         }
 
         return $resultArray[1];
@@ -95,9 +95,9 @@ class Gateway
     }
 
     /**
-     * Get reference id if the payment is successful or false if not
+     * Get ResCode if the payment is successful or false if not
      *
-     * @return string|false
+     * @return string|false ResCode
      */
     public function checkPayment()
     {
@@ -110,18 +110,19 @@ class Gateway
 
     /**
      * Verify the payment and get bank response
-     *
      * @return BankResult
-     * @throws UnsuccessfulPaymentException
+     * @throws InvalidResponseException
+     * @throws MellatException
+     * @throws GatewayException
      */
     public function verifyPayment()
     {
         if (isset($_POST['ResCode']) == false) {
-            throw new UnsuccessfulPaymentException();
+            throw new InvalidResponseException();
         }
 
         if ($_POST['ResCode'] != 0) {
-            throw new UnsuccessfulPaymentException('ResCode: ' . $_POST['ResCode']);
+            throw new MellatException($_POST['ResCode']);
         }
 
         $client = $this->createSoapClient();
@@ -135,39 +136,35 @@ class Gateway
             'saleReferenceId' => $_POST['SaleReferenceId']
         );
 
-        $client->call('bpVerifyRequest', $parameters, self::SOAP_NAMESPACE);
+        $client->bpVerifyRequest($parameters);
 
         $inquiryResult = $client->call('bpInquiryRequest', $parameters, self::SOAP_NAMESPACE);
         if ($inquiryResult != 0) {
-            throw new UnsuccessfulPaymentException('Inquiry Result: ' . $inquiryResult);
+            throw new MellatException($inquiryResult);
         }
 
-        $client->call('bpSettleRequest', $parameters, self::SOAP_NAMESPACE);
+        $client->bpSettleRequest($parameters);
 
         $bankResult = new BankResult();
-        $bankResult->refId = $_POST['RefId'];
+        $bankResult->refId = isset($_POST['RefId']) ?: null;
         $bankResult->resCode = $_POST['ResCode'];
-        $bankResult->saleOrderId = $_POST['SaleOrderId'];
-        $bankResult->saleReferenceId = $_POST['SaleReferenceId'];
+        $bankResult->saleOrderId = isset($_POST['SaleOrderId']) ?: null;
+        $bankResult->saleReferenceId = isset($_POST['SaleReferenceId'])?: null;
 
         return $bankResult;
     }
 
     /**
-     * @return nusoap_client
+     * @return object
      * @throws GatewayException
      */
     private function createSoapClient()
     {
-        /** @var object $client */
-        $client = new nusoap_client(self::WSDL);
-
-        if (empty($client)) {
-            throw new GatewayException('Gateway is not available.');
-        }
-
-        if ($e = $client->getError()) {
-            throw new GatewayException('Error: ' . $e);
+        try {
+            /** @var object $client */
+            $client = new SoapClient(self::WSDL);
+        } catch (SoapFault $e) {
+            throw new GatewayException('Gateway is not available', 0, $e);
         }
 
         return $client;
