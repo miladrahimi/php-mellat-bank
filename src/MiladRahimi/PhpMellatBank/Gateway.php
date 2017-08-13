@@ -73,14 +73,17 @@ class Gateway
             throw new GatewayException('Gateway does not respond', 0, $e);
         }
 
-        $resultArray = explode(',', $result);
-        $response = $resultArray[0];
+        $isWellDesgined = is_object($result) && property_exists($result, 'return');
 
-        if ($response != 0) {
-            throw new MellatException($response);
+        if ($isWellDesgined && preg_match('/^0,/', $result->return)) {
+            return substr($result, 2);
         }
 
-        return $resultArray[1];
+        if (!$isWellDesgined) {
+            throw new MellatException(json_encode($result));
+        }
+
+        throw new MellatException($result->return);
     }
 
     /**
@@ -148,8 +151,8 @@ class Gateway
         $bankResult->refId = isset($_POST['RefId']) ?: null;
         $bankResult->resCode = $_POST['ResCode'];
         $bankResult->saleOrderId = isset($_POST['SaleOrderId']) ?: null;
-        $bankResult->saleReferenceId = isset($_POST['CardHolderInfo'])?: null;
-        $bankResult->cardHolderInfo = isset($_POST['CardHolderPan'])?: null;
+        $bankResult->saleReferenceId = isset($_POST['CardHolderInfo']) ?: null;
+        $bankResult->cardHolderInfo = isset($_POST['CardHolderPan']) ?: null;
 
         return $bankResult;
     }
