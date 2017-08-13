@@ -141,8 +141,15 @@ class Gateway
         $client->bpVerifyRequest($parameters);
 
         $inquiryResult = $client->call('bpInquiryRequest', $parameters, self::SOAP_NAMESPACE);
-        if ($inquiryResult != 0) {
-            throw new MellatException($inquiryResult);
+
+        $isWellDesigned = is_object($inquiryResult) && property_exists($inquiryResult, 'return');
+
+        if (!$isWellDesigned) {
+            throw new MellatException(json_encode($inquiryResult));
+        }
+
+        if (preg_match('/^0/', $inquiryResult->return) == false) {
+            throw new MellatException($inquiryResult->return);
         }
 
         $client->bpSettleRequest($parameters);
