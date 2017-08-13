@@ -19,8 +19,6 @@ class Gateway
 {
     const WSDL = 'https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl';
 
-    const SOAP_NAMESPACE = 'http://interfaces.core.sw.bps.com/';
-
     const GATEWAY_URL = 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat';
 
     /**
@@ -140,7 +138,7 @@ class Gateway
 
         $client->bpVerifyRequest($parameters);
 
-        $inquiryResult = $client->call('bpInquiryRequest', $parameters, self::SOAP_NAMESPACE);
+        $inquiryResult = $client->bpInquiryRequest($parameters);
 
         $isWellDesigned = is_object($inquiryResult) && property_exists($inquiryResult, 'return');
 
