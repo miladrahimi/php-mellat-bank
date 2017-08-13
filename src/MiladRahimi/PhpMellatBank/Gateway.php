@@ -73,13 +73,13 @@ class Gateway
             throw new GatewayException('Gateway does not respond', 0, $e);
         }
 
-        $isWellDesgined = is_object($result) && property_exists($result, 'return');
+        $isWellDesigned = is_object($result) && property_exists($result, 'return');
 
-        if ($isWellDesgined && preg_match('/^0,/', $result->return)) {
-            return substr($result, 2);
+        if ($isWellDesigned && preg_match('/^0,/', $result->return)) {
+            return substr($result->return, 2);
         }
 
-        if (!$isWellDesgined) {
+        if (!$isWellDesigned) {
             throw new MellatException(json_encode($result));
         }
 
