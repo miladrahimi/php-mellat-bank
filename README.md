@@ -1,10 +1,10 @@
-# PhpMellatBank
+# Php-Mellat-Bank
 Iranian Mellat Bank Gateway for PHP Projects
 
 ## Installation
 
 ```
-composer require miladrahimi/phpmellatbank
+composer require miladrahimi/php-mellat-bank
 ```
 
 ### Lifecycle
